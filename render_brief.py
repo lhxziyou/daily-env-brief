@@ -23,7 +23,7 @@ QUOTES_PATH = os.path.join(BASE, "quotes.json")
 CALENDAR_PATH = os.path.join(BASE, "effective_calendar.json")
 
 CAT_CLASS = {
-    "法规·标准·指南（已落地）": "",
+    "法规·标准·指南（近期发布）": "",
     "政策征求意见（即将落地预警）": "warn",
     "专家/职称/鉴定人公示": "expert",
     "生态环保督察通报": "inspect",
@@ -105,6 +105,60 @@ def get_today_effective(today_str):
             })
     return out
 
+def _parse_date(s):
+    """把 pub_date 字符串解析为 date；支持 YYYY-MM-DD 与常见变体"""
+    if not s:
+        return None
+    s = str(s).strip()
+    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%Y-%m-%d %H:%M:%S"):
+        try:
+            return datetime.datetime.strptime(s[:len(fmt.split()[0]) + (fmt.count(' ') and len(s.split()[1]) or 0)] if ' ' in fmt else s[:10], fmt).date()
+        except Exception:
+            continue
+    # 尝试正则
+    m = re.search(r'(20\d{2})\D(0?[1-9]|1[0-2])\D(0?[1-9]|[12]\d|3[01])', s)
+    if m:
+        try:
+            return datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except Exception:
+            return None
+    return None
+
+def filter_recent_24h(items, today_str):
+    """
+    过滤条目，只保留发布时间在 [today-1天, today+1天) 内的消息。
+    简报以每日新闻为主，旧闻（>24h）不硬填；周一回顾模块单独走 weekly_review。
+    pub_date 为空或无法解析的条目默认保留（避免误丢）。
+    """
+    try:
+        today = datetime.datetime.strptime(today_str, "%Y-%m-%d").date()
+    except Exception:
+        return items
+    since = today - datetime.timedelta(days=1)
+    keep = []
+    for it in items:
+        d = _parse_date(it.get("pub_date", ""))
+        if d is None:
+            keep.append(it)
+            continue
+        if since <= d <= today + datetime.timedelta(days=1):
+            keep.append(it)
+        else:
+            print(f"[filter] 超出24h窗口，丢弃旧闻: {it.get('title','')[:40]} ({d})")
+    return keep
+
+def filter_today_effective_duplicates(items, today_effective):
+    """避免今日正式实施条目又在常规板块重复出现"""
+    eff_urls = {normalize_url(e.get("url", "")) for e in today_effective if e.get("url")}
+    keep = []
+    for it in items:
+        u = normalize_url(it.get("url", ""))
+        if u and u in eff_urls:
+            print(f"[filter] 已列入今日正式实施，常规板块去重: {it.get('title','')[:40]}")
+            continue
+        keep.append(it)
+    return keep
+
 def dedup(items, history):
     seen = {h.get("h") for h in history}
     new_items, dropped = [], 0
@@ -178,7 +232,7 @@ body { font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif
 """
 
 CAT_ICON = {
-    "法规·标准·指南（已落地）": "📋",
+    "法规·标准·指南（近期发布）": "📋",
     "政策征求意见（即将落地预警）": "⏳",
     "专家/职称/鉴定人公示": "👤",
     "生态环保督察通报": "🔍",
@@ -412,6 +466,10 @@ def main():
     today_effective = get_today_effective(data.get("date", ""))
     # 每日金句
     data["quote"] = get_quote(data)
+    # 每日简报只保留近24h内发布的新闻；旧闻不硬填，周一回顾另有 weekly_review
+    items = filter_recent_24h(items, data.get("date", ""))
+    # 避免今日正式实施条目在常规板块重复出现
+    items = filter_today_effective_duplicates(items, today_effective)
     # dedup
     history = []
     if os.path.exists(HISTORY_PATH):

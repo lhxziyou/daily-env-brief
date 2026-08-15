@@ -24,7 +24,7 @@ LEGACY_ARCHIVE_RE = re.compile(r'xxgk2018/xxgk/xxgk0[0-9]', re.I)
 
 # 简报 13 板块（与 render_brief.py 的 CAT_CLASS 对应）
 CAT_ORDER = [
-    "法规·标准·指南（已落地）",
+    "法规·标准·指南（近期发布）",
     "政策征求意见（即将落地预警）",
     "专家/职称/鉴定人公示",
     "生态环保督察通报",
@@ -142,7 +142,7 @@ def classify(title, source):
     elif re.search(r'典型案例|执法', t):
         cat = "典型案例与执法"
     else:
-        cat = "法规·标准·指南（已落地）"
+        cat = "法规·标准·指南（近期发布）"
     return cat, impact
 
 def parse_list(html, base, list_url, source):

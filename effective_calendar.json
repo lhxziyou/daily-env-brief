@@ -2,19 +2,59 @@
   "_comment": "今日正式实施日历（权威单一来源）。render_brief.py 每日读取本文件，把 effective_date == 当日 的条目注入简报顶部『📌 今日正式实施』模块。curated=人工/AI核对条目（不会被自动刷新覆盖）；auto=由 refresh_calendar.py 从详情页抽取施行日期自动补全。新增条目直接往数组里加即可，两套线（云/本地）共用同一文件，改一处两边都生效。",
   "entries": [
     {
-      "title": "生态环境法典（生态法典）",
+      "title": "中华人民共和国生态环境法典",
       "effective_date": "2026-08-15",
       "url": "https://www.mee.gov.cn/home/ztbd/2022/sthjpf/xfxcz/202607/t20260723_1162631.shtml",
-      "source": "生态环境部",
+      "source": "全国人民代表大会/生态环境部",
       "note": "十四届全国人大四次会议通过，国家主席令第70号公布，自2026-08-15起施行。",
       "curated": true
     },
     {
-      "title": "《水质 六价铬的测定》等5项国家生态环境标准",
+      "title": "国务院关于修改和废止部分行政法规的决定（国务院令第843号）",
+      "effective_date": "2026-08-15",
+      "url": "https://www.mee.gov.cn/zcwj/gwywj/202608/t20260814_1164034.shtml",
+      "source": "国务院",
+      "note": "为贯彻实施生态环境法典，对12部行政法规部分条款修改、3部行政法规废止，自2026-08-15起施行。",
+      "curated": true
+    },
+    {
+      "title": "关于新化学物质环境管理登记有关事项的通知",
+      "effective_date": "2026-08-15",
+      "url": "https://www.mee.gov.cn/xxgk2018/xxgk/xxgk06/202608/t20260804_1163416.html",
+      "source": "生态环境部",
+      "note": "自2026-08-15起停止办理新化学物质环境管理备案，本通知同步施行。",
+      "curated": true
+    },
+    {
+      "title": "重点监管单位土壤和地下水污染隐患排查整治技术指南（HJ 1478-2026）",
+      "effective_date": "2026-08-15",
+      "url": "https://www.mee.gov.cn/xxgk2018/xxgk/xxgk01/202606/t20260622_1159962.html",
+      "source": "生态环境部",
+      "note": "2026-06-12发布，自2026-08-15起实施；原《重点监管单位土壤污染隐患排查指南（试行）》（公告〔2021〕1号）废止。",
+      "curated": true
+    },
+    {
+      "title": "生态环境影响评价技术导则 核技术利用项目退役（HJ 1479-2026）",
+      "effective_date": "2026-08-15",
+      "url": "https://www.mee.gov.cn/xxgk2018/xxgk/xxgk01/202607/t20260720_1162228.html",
+      "source": "生态环境部",
+      "note": "2026-07-12发布，自2026-08-15起实施。",
+      "curated": true
+    },
+    {
+      "title": "《水质 六价铬的测定》等5项国家生态环境标准（HJ 1470-1474）",
       "effective_date": "2026-08-15",
       "url": "https://www.mee.gov.cn/xxgk2018/xxgk/xxgk01/202605/t20260522_1155078.html",
       "source": "生态环境部",
-      "note": "2026-05-15发布，明确『2026-08-15起实施』。",
+      "note": "2026-05-15发布，含 HJ 1470-1474，自2026-08-15起实施。",
+      "curated": true
+    },
+    {
+      "title": "厦门市生态环境系统包容审慎监管执法清单",
+      "effective_date": "2026-08-15",
+      "url": "https://sthjj.xm.gov.cn/zwgk/tzgg/202608/t20260814_3012620.htm",
+      "source": "厦门市生态环境局",
+      "note": "2026-08-14发布，自2026-08-15起施行；原厦环法〔2025〕10号清单停止执行。",
       "curated": true
     }
   ]

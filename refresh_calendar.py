@@ -3,7 +3,7 @@
 今日实施日历维护助手（本地按需运行，不进每日自动流）
 
 功能：
-1. 读取 brief_data.json 中「法规·标准·指南（已落地）」条目的详情页；
+1. 读取 brief_data.json 中「法规·标准·指南（近期发布）」条目的详情页；
 2. 用正则抽取「自YYYY年MM月DD日起施行 / YYYY年MM月DD日起实施」日期；
 3. 把结果写入 effective_calendar.json 的 auto 条目（curated 条目绝不覆盖）；
 4. 已存在的 auto 条目按 url 去重更新。
