@@ -1,0 +1,45 @@
+name: 每日环保简报（云线）
+
+on:
+  schedule:
+    - cron: '30 0 * * *'        # UTC 00:30 = 北京时间 08:30
+  workflow_dispatch:           # 允许手动触发测试
+
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖（playwright 用于绕过生态环境部反爬）
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: 抓取并推送简报（云线：纯脚本抓取 + PushPlus）
+        env:
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          PUSHPLUS_TOPIC: ${{ secrets.PUSHPLUS_TOPIC }}
+          PUSH_CHANNELS: 'pushplus'
+          DATA_PATH: 'brief_data_cloud.json'   # 与本地线 brief_data.json 分离，避免互相覆盖
+          LINE: 'cloud'                         # 输出目录加 _cloud 后缀，便于双线区分
+          SKIP_PNG: '1'
+        run: |
+          python brief_crawl.py
+          python render_brief.py
+
+      - name: 提交历史/汇总（持久化去重与归档）
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add history/ 汇总.csv brief_data_cloud.json
+          git commit -m "brief update $(date +%F)" || echo "no changes"
+          git push

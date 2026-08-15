@@ -1,0 +1,30 @@
+# 每日输出与历史数据（云端由 Actions 重新生成，无需入库）
+2026-*/
+2027-*/
+2028-*/
+history/
+汇总.csv
+*.csv
+
+# 敏感配置（仅本地使用，云端用 GitHub Secrets）
+wxpusher_config.json
+pushplus_config.json
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.bak
