@@ -1,11 +1,11 @@
 # 一键创建 GitHub 仓库并推送（PowerShell 5.1 兼容）
 $ErrorActionPreference = "Stop"
 
-$githubUser = Read-Host "请输入你的 GitHub 用户名（不是邮箱）"
+$githubUser = Read-Host "请输入你的 GitHub 用户名（默认 lhxziyou，直接回车采用）"
 if ([string]::IsNullOrWhiteSpace($githubUser)) {
-    Write-Host "用户名不能为空" -ForegroundColor Red
-    exit 1
+    $githubUser = "lhxziyou"
 }
+Write-Host "将使用 GitHub 用户名: $githubUser" -ForegroundColor Cyan
 
 $token = Read-Host "请输入 GitHub Personal Access Token（classic，需勾选 repo 权限）" -AsSecureString
 $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($token)
