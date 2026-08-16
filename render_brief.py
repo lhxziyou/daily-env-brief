@@ -36,6 +36,8 @@ CAT_CLASS = {
     "科技与新技术规范": "tech",
     "政策法规官方解读": "read",
     "环评/验收专项动态": "accept",
+    "典型突发环境事件案例": "accident",
+    "环境损害司法鉴定典型案例": "judicial",
 }
 CAT_ORDER = list(CAT_CLASS.keys())
 
@@ -124,19 +126,28 @@ def _parse_date(s):
             return None
     return None
 
+# 参考/知识型板块：全国搜罗、发布不频繁，放宽到近30天，不受24h限制
+EXEMPT_RECENT = {"典型突发环境事件案例", "环境损害司法鉴定典型案例"}
+
 def filter_recent_24h(items, today_str):
     """
     过滤条目，只保留发布时间在 [today-1天, today+1天) 内的消息。
     简报以每日新闻为主，旧闻（>24h）不硬填；周一回顾模块单独走 weekly_review。
     pub_date 为空或无法解析的条目默认保留（避免误丢）。
+    例外：典型突发环境事件案例 / 环境损害司法鉴定典型案例 属参考型板块，
+    面向全国搜罗、发布不频繁，放宽到近30天。
     """
     try:
         today = datetime.datetime.strptime(today_str, "%Y-%m-%d").date()
     except Exception:
         return items
     since = today - datetime.timedelta(days=1)
+    since_exempt = today - datetime.timedelta(days=30)
     keep = []
     for it in items:
+        if it.get("category", "") in EXEMPT_RECENT:
+            keep.append(it)
+            continue
         d = _parse_date(it.get("pub_date", ""))
         if d is None:
             keep.append(it)
@@ -209,6 +220,8 @@ body { font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif
 .item.tech { border-left-color:#1abc9c; }
 .item.read { border-left-color:#5d6d7e; }
 .item.accept { border-left-color:#2e86c1; }
+.item.accident { border-left-color:#e67e22; }
+.item.judicial { border-left-color:#9b59b6; }
 .item .title { font-size:13.5px; font-weight:700; color:#21332a; line-height:1.45; }
 .item .summary { font-size:11.5px; color:#5a6b62; line-height:1.45; margin-top:5px; }
 .item .meta { font-size:11px; color:#7a8b82; margin-top:7px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:5px; }
@@ -222,6 +235,8 @@ body { font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif
 .item.tech .impact { color:#138d75; background:#e8f8f3; }
 .item.read .impact { color:#515a5a; background:#f0f2f2; }
 .item.accept .impact { color:#2471a3; background:#eaf2f9; }
+.item.accident .impact { color:#ca6510; background:#fdebd0; }
+.item.judicial .impact { color:#8e44ad; background:#f5eef9; }
 .weekly { margin:16px 16px 0; background:#fff8ec; border:1px dashed #e0a32e; border-radius:10px; padding:12px 14px; }
 .weekly .wt { font-size:13px; font-weight:700; color:#b9821b; margin-bottom:6px; }
 .weekly li { font-size:12px; color:#5a4a2e; margin:3px 0 3px 16px; }
@@ -245,6 +260,8 @@ CAT_ICON = {
     "科技与新技术规范": "🔬",
     "政策法规官方解读": "📖",
     "环评/验收专项动态": "📝",
+    "典型突发环境事件案例": "🚨",
+    "环境损害司法鉴定典型案例": "⚖️",
 }
 
 def build_effective_html(today_effective, for_push=False):
@@ -450,6 +467,58 @@ def push_wxpusher(data, push_html, count):
     with urllib.request.urlopen(req, timeout=30) as r:
         return r.read().decode("utf-8")
 
+# ---------- 企业微信（云线：普通微信接收）----------
+def get_wecom_cfg():
+    """读环境变量 WECOM_WEBHOOK（GitHub Actions Secrets），本地留空则跳过"""
+    return os.environ.get("WECOM_WEBHOOK", "").strip()
+
+def build_wecom_markdown(data, items_by_cat, today_effective):
+    """生成企业微信群机器人 markdown（支持 # 标题/**加粗**/[链接]/引用，单条上限4096字节）"""
+    lines = [f"# 🌿 每日环保简报 {data['date']}（{data.get('count', 0)}条）", ""]
+    if today_effective:
+        lines.append("> 📌 **今日正式实施（法规·标准）**")
+        for e in today_effective:
+            title, url, src = e.get("title", ""), e.get("url", ""), e.get("source", "")
+            lines.append(f"> [{title}]({url})　{src}" if url else f"> {title}　{src}")
+        lines.append("")
+    for cat in CAT_ORDER:
+        its = items_by_cat.get(cat)
+        if not its:
+            continue
+        lines.append(f"**{cat}**")
+        for it in its:
+            url = it.get("url", "")
+            title = it.get("title", "")
+            meta = f"{it.get('source', '')} · {it.get('pub_date', '')}"
+            lines.append(f"- [{title}]({url})　{meta}" if url else f"- {title}　{meta}")
+        lines.append("")
+    if data.get("quote"):
+        lines.append(f"🌿 {data.get('quote', '')}")
+        lines.append("")
+    lines.append("> 标题可点击跳转官方原文 · 每日 08:30 自动整理")
+    md = "\n".join(lines)
+    # 企业微信单条 markdown 上限 4096 字节，超限按字节截断并提示
+    if len(md.encode("utf-8")) > 4000:
+        cut = md.encode("utf-8")[:4000].decode("utf-8", "ignore")
+        idx = cut.rfind("\n")
+        cut = cut[:idx] if idx > 0 else cut
+        md = cut + "\n\n> …（内容过长已截断，详见完整版）"
+    return md
+
+def push_wecom(data, wecom_md, count):
+    url = get_wecom_cfg()
+    if not url:
+        print("[push] 未配置 WECOM_WEBHOOK，跳过 WeCom 通道")
+        return "NO_TOKEN"
+    payload = {"msgtype": "markdown", "markdown": {"content": wecom_md}}
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return r.read().decode("utf-8")
+
 def resolve_channels():
     """返回本次要使用的通道列表。env PUSH_CHANNELS 逗号分隔；默认 pushplus,wxpusher（按 token 实际可用性再滤）"""
     raw = os.environ.get("PUSH_CHANNELS", "pushplus,wxpusher")
@@ -495,6 +564,7 @@ def main():
 
     poster_html = build_poster_html(data, poster_by_cat, overview, today_effective)
     push_html = build_push_html(data, items_by_cat, today_effective)
+    wecom_md = build_wecom_markdown(data, items_by_cat, today_effective)
 
     line = os.environ.get("LINE", "")
     date = data["date"]
@@ -534,6 +604,9 @@ def main():
             elif ch == "wxpusher":
                 resp = push_wxpusher(data, push_html, len(items))
                 print("[push] WxPusher 返回:", resp)
+            elif ch == "wecom":
+                resp = push_wecom(data, wecom_md, len(items))
+                print("[push] WeCom 返回:", resp)
             else:
                 print(f"[push] 未知通道: {ch}")
         except Exception as e:
