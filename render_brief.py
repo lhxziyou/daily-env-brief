@@ -17,8 +17,11 @@ import json, os, sys, csv, hashlib, urllib.request, datetime, re
 BASE = os.path.dirname(os.path.abspath(__file__))
 CFG_PATH = os.path.join(BASE, "wxpusher_config.json")
 DATA_PATH = os.path.join(BASE, os.environ.get("DATA_PATH", "brief_data.json"))
-HISTORY_PATH = os.path.join(BASE, "history", "items_history.json")
-CSV_PATH = os.path.join(BASE, "汇总.csv")
+# 双线完全独立冗余：去重历史与汇总按 LINE 分文件，互不干扰
+# 本地线未设 LINE 时默认 local；云线设 LINE=cloud
+_LINE_TAG = os.environ.get("LINE", "") or "local"
+HISTORY_PATH = os.path.join(BASE, "history", f"items_history_{_LINE_TAG}.json")
+CSV_PATH = os.path.join(BASE, f"汇总_{_LINE_TAG}.csv")
 QUOTES_PATH = os.path.join(BASE, "quotes.json")
 CALENDAR_PATH = os.path.join(BASE, "effective_calendar.json")
 
@@ -566,9 +569,10 @@ def main():
     push_html = build_push_html(data, items_by_cat, today_effective)
     wecom_md = build_wecom_markdown(data, items_by_cat, today_effective)
 
-    line = os.environ.get("LINE", "")
+    line = os.environ.get("LINE", "") or "local"
+    print(f"[line] 线路标签={line} | 去重历史={os.path.basename(HISTORY_PATH)} | 汇总={os.path.basename(CSV_PATH)}")
     date = data["date"]
-    day_dir = os.path.join(BASE, (date + "_" + line) if line else date)  # 双线可按 LINE 分目录，避免互相覆盖
+    day_dir = os.path.join(BASE, (date + "_" + line) if line != "local" else date)  # 双线可按 LINE 分目录，避免互相覆盖；本地线保持原目录名
     os.makedirs(day_dir, exist_ok=True)
     os.makedirs(os.path.dirname(HISTORY_PATH), exist_ok=True)
 

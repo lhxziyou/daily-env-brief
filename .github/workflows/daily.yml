@@ -39,6 +39,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add history/ 汇总.csv brief_data_cloud.json
+          git add history/ 汇总_cloud.csv brief_data_cloud.json
           git commit -m "brief update $(date +%F)" || echo "no changes"
           git push
