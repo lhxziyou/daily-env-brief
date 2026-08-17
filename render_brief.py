@@ -496,14 +496,14 @@ def build_wecom_text(data, items_by_cat, today_effective):
     if data.get("quote"):
         lines.append(f"🌿 {data.get('quote', '')}")
         lines.append("")
-    lines.append("每日 08:30 自动整理 · 标题链接请见 WxPusher App 完整版")
+    lines.append("每日 08:30 自动整理 · 完整版与官方链接请见本地线")
     text = "\n".join(lines)
     # 企业微信单条 text 上限 4096 字节（官方约 2048 汉字），超限截断提示
     if len(text.encode("utf-8")) > 4000:
         cut = text.encode("utf-8")[:4000].decode("utf-8", "ignore")
         idx = cut.rfind("\n")
         cut = cut[:idx] if idx > 0 else cut
-        text = cut + "\n\n…（内容过长已截断，完整版请见 WxPusher App）"
+        text = cut + "\n\n…（内容过长已截断，完整版请见本地线）"
     return text
 
 def push_wecom(data, wecom_text, count):
