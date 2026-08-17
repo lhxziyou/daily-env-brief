@@ -1,10 +1,16 @@
-# 每日输出与历史数据（云端由 Actions 重新生成，无需入库）
+# 每日输出目录（本地海报/HTML，不入库）
 2026-*/
 2027-*/
 2028-*/
-history/
+
+# 本地去重历史与本地汇总（不入库）
+history/*
+!history/items_history_cloud.json
 汇总.csv
-*.csv
+汇总_local.csv
+
+# 云线去重历史与云线汇总（需要入库，供下一次 GitHub Actions 运行继承）
+!汇总_cloud.csv
 
 # 敏感配置（仅本地使用，云端用 GitHub Secrets）
 wxpusher_config.json
