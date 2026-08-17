@@ -607,6 +607,9 @@ def main():
                 resp = push_wxpusher(data, push_html, len(items))
                 print("[push] WxPusher 返回:", resp)
             elif ch == "wecom":
+                if len(items) == 0:
+                    print("[push] WeCom 跳过：去重后无新条目（避免重复空简报，主推线已覆盖或今日确实无更新）")
+                    continue
                 resp = push_wecom(data, wecom_text, len(items))
                 print("[push] WeCom 返回:", resp)
             else:
