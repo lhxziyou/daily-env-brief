@@ -475,45 +475,43 @@ def get_wecom_cfg():
     """读环境变量 WECOM_WEBHOOK（GitHub Actions Secrets），本地留空则跳过"""
     return os.environ.get("WECOM_WEBHOOK", "").strip()
 
-def build_wecom_markdown(data, items_by_cat, today_effective):
-    """生成企业微信群机器人 markdown（支持 # 标题/**加粗**/[链接]/引用，单条上限4096字节）"""
-    lines = [f"# 🌿 每日环保简报 {data['date']}（{data.get('count', 0)}条）", ""]
+def build_wecom_text(data, items_by_cat, today_effective):
+    """生成企业微信群机器人纯文本（微信插件对 markdown 兼容性差，text 最稳；单条上限4096字节）"""
+    lines = [f"🌿 每日环保简报 {data['date']}（共{data.get('count', 0)}条）", ""]
     if today_effective:
-        lines.append("> 📌 **今日正式实施（法规·标准）**")
+        lines.append("📌 今日正式实施（法规·标准）")
         for e in today_effective:
-            title, url, src = e.get("title", ""), e.get("url", ""), e.get("source", "")
-            lines.append(f"> [{title}]({url})　{src}" if url else f"> {title}　{src}")
+            lines.append(f"• {e.get('title', '')}　来源：{e.get('source', '')}")
         lines.append("")
     for cat in CAT_ORDER:
         its = items_by_cat.get(cat)
         if not its:
             continue
-        lines.append(f"**{cat}**")
+        lines.append(f"【{cat}】")
         for it in its:
-            url = it.get("url", "")
             title = it.get("title", "")
             meta = f"{it.get('source', '')} · {it.get('pub_date', '')}"
-            lines.append(f"- [{title}]({url})　{meta}" if url else f"- {title}　{meta}")
+            lines.append(f"• {title}　{meta}")
         lines.append("")
     if data.get("quote"):
         lines.append(f"🌿 {data.get('quote', '')}")
         lines.append("")
-    lines.append("> 标题可点击跳转官方原文 · 每日 08:30 自动整理")
-    md = "\n".join(lines)
-    # 企业微信单条 markdown 上限 4096 字节，超限按字节截断并提示
-    if len(md.encode("utf-8")) > 4000:
-        cut = md.encode("utf-8")[:4000].decode("utf-8", "ignore")
+    lines.append("每日 08:30 自动整理 · 标题链接请见 WxPusher App 完整版")
+    text = "\n".join(lines)
+    # 企业微信单条 text 上限 4096 字节（官方约 2048 汉字），超限截断提示
+    if len(text.encode("utf-8")) > 4000:
+        cut = text.encode("utf-8")[:4000].decode("utf-8", "ignore")
         idx = cut.rfind("\n")
         cut = cut[:idx] if idx > 0 else cut
-        md = cut + "\n\n> …（内容过长已截断，详见完整版）"
-    return md
+        text = cut + "\n\n…（内容过长已截断，完整版请见 WxPusher App）"
+    return text
 
-def push_wecom(data, wecom_md, count):
+def push_wecom(data, wecom_text, count):
     url = get_wecom_cfg()
     if not url:
         print("[push] 未配置 WECOM_WEBHOOK，跳过 WeCom 通道")
         return "NO_TOKEN"
-    payload = {"msgtype": "markdown", "markdown": {"content": wecom_md}}
+    payload = {"msgtype": "text", "text": {"content": wecom_text}}
     req = urllib.request.Request(
         url,
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -567,7 +565,7 @@ def main():
 
     poster_html = build_poster_html(data, poster_by_cat, overview, today_effective)
     push_html = build_push_html(data, items_by_cat, today_effective)
-    wecom_md = build_wecom_markdown(data, items_by_cat, today_effective)
+    wecom_text = build_wecom_text(data, items_by_cat, today_effective)
 
     line = os.environ.get("LINE", "") or "local"
     print(f"[line] 线路标签={line} | 去重历史={os.path.basename(HISTORY_PATH)} | 汇总={os.path.basename(CSV_PATH)}")
@@ -609,7 +607,7 @@ def main():
                 resp = push_wxpusher(data, push_html, len(items))
                 print("[push] WxPusher 返回:", resp)
             elif ch == "wecom":
-                resp = push_wecom(data, wecom_md, len(items))
+                resp = push_wecom(data, wecom_text, len(items))
                 print("[push] WeCom 返回:", resp)
             else:
                 print(f"[push] 未知通道: {ch}")
